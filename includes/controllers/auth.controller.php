@@ -1,0 +1,112 @@
+<?php 
+require_once __DIR__ . '/../models/User.class.php';
+require 'vendor/autoload.php';
+require_once __DIR__ . '/../db/db.connector.php';
+
+use Firebase\JWT\JWT;
+ 
+
+class Auth_controller 
+{
+    private $pdo;
+
+    public function __construct(){
+        $dbConnector = new Db_connector();
+        $this->pdo = $dbConnector->getPDO();
+    }
+    /**
+     * Function for register endpoint
+     * @param string $username
+     * @param string $email
+     * @param string $password
+     * @return void
+     */
+    public function register(string $username, string $email, string $password)
+    {
+        $user = new User($username, $email, $password);
+        $user->setId();
+        $user->setEmail($email);
+        $user->setPassword($password);
+        $user->setUsername($username);
+
+        if (!$this->pdo) {
+            throw new Exception("Database connection failed.");
+        }
+        $stmt = $this->pdo->prepare("INSERT INTO users (uuid, username, email, password) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$user->getId() ,$user->getUsername(), $user->getEmail(), $user->getPassword()]);
+        
+    }
+
+    /**
+     * function for login endpoint
+     * @param string $id
+     * @return void
+     */
+    public function login(string $email, string $password)
+    {
+        $user = new User($email, $password);
+        $user->setEmail($email);
+        $user->setPassword($password);
+        if (!$this->pdo) {
+            throw new Exception("Database connection failed.");
+        }
+        $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = ? limit 1");
+        $stmt->execute([$user->getEmail()]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($result && password_verify($password, $result["password"])) {
+            $key = '1a3LM3W966D6QTJ5BJb9opunkUcw_d09NCOIJb9QZTsrneqOICoMoeYUDcd_NfaQyR787PAH98Vhue5g938jdkiyIZyJICytKlbjNBtebaHljIR6-zf3A2h3uy6pCtUFl1UhXWnV6madujY4_3SyUViRwBUOP-UudUL4wnJnKYUGDKsiZePPzBGrF4_gxJMRwF9lIWyUCHSh-PRGfvT7s1mu4-5ByYlFvGDQraP4ZiG5bC1TAKO_CnPyd1hrpdzBzNW4SfjqGKmz7IvLAHmRD-2AMQHpTU-hN2vwoA-iQxwQhfnqjM0nnwtZ0urE6HjKl6GWQW-KLnhtfw5n_84IRQ';
+            $token = JWT::encode(
+					array(
+						'iat'		=>	time(),
+						'nbf'		=>	time(),
+						'exp'		=>	time() + 3600,
+						'data'	=> array(
+                            'uuid' => $result['uuid'],
+                            'username'	=>	$result['username'],
+							'email'	=>	$result['email'],
+                            'created_at' => $result['created_at']
+                        )
+                    ),
+                    $key,
+                        'HS256'
+                    );
+            header("Set-Cookie: token={$token}; Secure; Path=/; SameSite=None; Partitioned;");
+            echo json_encode([
+                "message" => "200 - Connexion réussie",
+                "token" => $token,
+            ]);
+        } else {
+            http_response_code(401);
+            echo json_encode(["message" => "401 - Email ou mot de passe incorrect"]);
+        }
+    }
+    public function logout()
+    {
+        if(!$_SERVER['HTTP_COOKIE']){
+            http_response_code(401);
+            echo json_encode(["message" => "401 - Veillez vous connecter"]);
+        } else if($_SERVER['HTTP_COOKIE']){
+            setcookie('token', '', time() - 3600, '/');
+        }
+    }
+    public function header(string $method, ?array $data = null)
+    {
+        if ($data !== null && !isset($data['name'], $data['heads'], $data['types'])) {
+            http_response_code(401);
+            $json = json_encode(["message" => "401 - Données incomplètes pour cette requête"]);
+            return $json;
+        }
+        if ($_SERVER['REQUEST_METHOD'] !==  $method) {
+            http_response_code(405);
+            $json = json_encode(["message" => "405 - Méthode non autorisée"]);
+            return $json;
+        }
+        if (!isset($_SERVER['HTTP_AUTHORIZATION']) || strpos($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') !== 0) {
+            http_response_code(401);
+            $json = json_encode(["message" => "401 - Authentification Bearer requise"]);
+            return $json;
+        }
+        return true;
+    }
+
+}
