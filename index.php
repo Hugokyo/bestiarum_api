@@ -4,7 +4,7 @@ require_once __DIR__ . '/includes/controllers/auth.controller.php';
 require_once __DIR__ . '/includes/controllers/types.controller.php';
 require_once __DIR__ . '/includes/controllers/monsters.controller.php';
 require_once __DIR__ . '/includes/controllers/hybrids.controller.php';
-
+require_once __DIR__ . '/includes/controllers/matchs.controller.php';
 
 $db = new Db_connector();
 $pdo = $db->getPDO();
@@ -140,7 +140,31 @@ if(!empty($path)){
             $user = new User();
             echo $hybrid->create($user->getId(), $data['monstre_1'], $data['monstre_2']);
             break;
-
+        case 'match':
+            header("Access-Control-Allow-Origin: *");
+            header("Content-Type: application/json; charset=UTF-8");
+            header("Access-Control-Allow-Methods: POST");
+            header("Access-Control-Allow-Headers: Access-Control-Allow-Headers, Content-Type, Access-Control-Allow-Methods, Authorization, X-Requested-With");
+            $body = file_get_contents('php://input');
+            $data = json_decode($body, true);
+             if (!isset($data['monstre_1'], $data['monstre_2'])) {
+                http_response_code(401);
+                echo json_encode(["message" => "401 - Données incomplètes pour cet requette"]);
+                exit;
+            }
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(["message" => "405 - Méthode non autorisée"]);
+                exit;
+            }
+            if (!isset($_SERVER['HTTP_AUTHORIZATION']) || strpos($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') !== 0) {
+                http_response_code(401);
+                echo json_encode(["message" => "401 - Authentification Bearer requise"]);
+                exit;
+            }
+            $match = new Matchs_controller();
+            echo $match->match($data['monstre_1'], $data['monstre_2']);
+            break;
         default:
             http_response_code(400); 
             

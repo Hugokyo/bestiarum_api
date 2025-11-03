@@ -80,6 +80,10 @@ class Auth_controller
             echo json_encode(["message" => "401 - Email ou mot de passe incorrect"]);
         }
     }
+    /**
+     * la function pour permettre a l'utilisateur de se deconnecter, il supprime le cookie qui est stocker dans le header
+     * @return void
+     */
     public function logout()
     {
         if(!$_SERVER['HTTP_COOKIE']){
@@ -89,6 +93,12 @@ class Auth_controller
             setcookie('token', '', time() - 3600, '/');
         }
     }
+    /**
+     * permet de ne pas répéter le module header dans chaque requettes
+     * @param string $method
+     * @param mixed $data
+     * @return bool|string
+     */
     public function header(string $method, ?array $data = null)
     {
         if ($data !== null && !isset($data['name'], $data['heads'], $data['types'])) {

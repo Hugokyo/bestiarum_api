@@ -11,7 +11,12 @@ class Monsters_controller
         $dbConnector = new Db_connector();
         $this->pdo = $dbConnector->getPDO();
     }
-
+    /**
+     * function qui permet de générer la photo de la créatures, et qui la stocke dans un fichier sur le serveurs
+     * @param int $heads
+     * @param string $types
+     * @return bool|string
+     */
     public function generate_image(int $heads, string $types)
     {
         $pollinations = new Pollinations_class('', $heads, $types);
@@ -19,7 +24,6 @@ class Monsters_controller
 
         $pollinations_api_url = "https://image.pollinations.ai/prompt/{$prompt}?width=1042&height=1042&model=gptimage?token=EwVAHta0RAXgtuA2";
 
-        // stocker l'image dans un dossier includes/public/storage
         $response = @file_get_contents($pollinations_api_url);
         if ($response === FALSE) {
             http_response_code(500);
@@ -38,7 +42,13 @@ class Monsters_controller
         
         return $response;
     }
-
+    /**
+    * function qui permet de générer la description modifier pour la créature
+     * @param string $name
+     * @param int $heads
+     * @param string $types
+     * @return bool|string
+     */
     public function generate_monster_info(string $name, int $heads, string $types)
     {
         $pollinations = new Pollinations_class($name, $heads, $types);
@@ -57,7 +67,21 @@ class Monsters_controller
         return $response; 
 
     }
-
+    /**
+     * function qui permet de crée une créatures
+     * @param string $name
+     * @param string $description
+     * @param array $type
+     * @param string $image
+     * @param int $heal_score
+     * @param int $defense_score
+     * @param int $attaque_score
+     * @param int $heads
+     * @param string $created_by
+     * @param bool $is_hybride
+     * @throws \Exception
+     * @return bool|string
+     */
     public function create(string $name, string $description, array $type, string $image, int $heal_score, int $defense_score, int $attaque_score, int $heads, string $created_by, bool $is_hybride){
         $monstre = new Monstre_class($name, $description, $type, $image, $heal_score, $defense_score, $attaque_score, $heads, false , $created_by);
         $monstre->setName($name)->setDescription($description)->setType($type)->setHeads($heads)->setIsHybride(false);

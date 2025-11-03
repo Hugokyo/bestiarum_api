@@ -14,7 +14,12 @@ class Hybrids_controller
         $dbConnector = new Db_connector();
         $this->pdo = $dbConnector->getPDO();
     }
-
+    /**
+     * function permettant de crée la photo pour la créatures hybrid et la stocker dans notre serveur
+     * @param int $heads
+     * @param string $types
+     * @return bool|string
+     */
     public function generate_hybrid_image(int $heads, string $types)
     {
         $pollinations = new Pollinations_class('', $heads, $types);
@@ -22,7 +27,6 @@ class Hybrids_controller
 
         $pollinations_api_url = "https://image.pollinations.ai/prompt/{$prompt}?width=1042&height=1042&model=gptimage?token=EwVAHta0RAXgtuA2";
 
-        // stocker l'image dans un dossier includes/public/storage
         $response = @file_get_contents($pollinations_api_url);
         if ($response === FALSE) {
             http_response_code(500);
@@ -41,7 +45,13 @@ class Hybrids_controller
         
         return $response;
     }
-
+    /**
+     * function qui permet de générer la description modifier pour la créature hybrids
+     * @param string $name
+     * @param int $heads
+     * @param string $types
+     * @return bool|string
+     */
     public function generate_monster_hybrid_info(string $name, int $heads, string $types)
     {
         $type_names_final = [];
@@ -69,7 +79,14 @@ class Hybrids_controller
 
         return $response; 
     }
-
+    /**
+     * fonction qui permet de créer l'hybride de deux créatures existantes, il prend en paramètre l'id des deux parents et récupère toutes les informations sur ces parents, et crée un monstre avec le mélange des informations de ces deux parents
+     * @param string $created_by
+     * @param string $monstre_1
+     * @param string $monstre_2
+     * @throws \Exception
+     * @return bool|string
+     */
     public function create(string $created_by, string $monstre_1, string $monstre_2){
         $stmt = $this->pdo->prepare("SELECT * FROM monstres WHERE uuid = ? OR uuid = ? limit 2");
         $stmt->execute([$monstre_1, $monstre_2]);

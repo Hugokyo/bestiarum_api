@@ -11,7 +11,12 @@ class Types_controller
         $dbConnector = new Db_connector();
         $this->pdo = $dbConnector->getPDO();
     }
+    /**
+     * fonction qui permet de créer un type pour la créature, il regarde si le type existe, s'il existe on récupère son uuid sinon on le crée
 
+     * @param string $name
+     * @throws \Exception
+     */
     public function createType(string $name){
         $type = new Type($name);
         $type->setId();
