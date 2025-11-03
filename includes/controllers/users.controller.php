@@ -26,9 +26,9 @@ class Users_controller
     }
 
     public function getMonsterByUser(string $id){
-        $stmt = $this->pdo->prepare("SELECT * FROM monstres WHERE created_by = ? LIMIT 1");
+        $stmt = $this->pdo->prepare("SELECT * FROM monstres WHERE created_by = ?");
         $stmt->execute([$id]);
-        $monstresuser = $stmt->fetch(PDO::FETCH_ASSOC);
+        $monstresuser = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return $monstresuser;
         // if ($monstresuser) {
         //     http_response_code(200);

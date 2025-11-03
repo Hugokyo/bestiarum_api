@@ -141,8 +141,11 @@ if(!empty($path)){
                 exit;
             }
             $hybrid = new Hybrids_controller();
-            $user = new User();
-            echo $hybrid->create($user->getId(), $data['monstre_1'], $data['monstre_2']);
+            $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+            $token = str_replace('Bearer ', '', $authHeader);
+            $authController = new Auth_controller();
+            $userId = $authController->getIdWithToken($token);
+            echo $hybrid->create($userId, $data['monstre_1'], $data['monstre_2']);
             break;
         case 'match':
             header("Access-Control-Allow-Origin: *");
@@ -197,16 +200,20 @@ if(!empty($path)){
         case 'users/monstres': 
             header("Access-Control-Allow-Origin: *");
             header("Content-Type: application/json; charset=UTF-8");
-            header("Access-Control-Allow-Methods: POST");
+            header("Access-Control-Allow-Methods: POST, OPTIONS");
             header("Access-Control-Allow-Headers: Access-Control-Allow-Headers, Content-Type, Access-Control-Allow-Methods, Authorization, X-Requested-With");
             $body = file_get_contents('php://input');
             $data = json_decode($body, true);
+            if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+                http_response_code(200);
+                exit;
+            }
              if (!isset($data['uuid'])) {
                 http_response_code(401);
                 echo json_encode(["message" => "401 - Données incomplètes pour cet requette"]);
                 exit;
             }
-            if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 http_response_code(405);
                 echo json_encode(["message" => "405 - Méthode non autorisée"]);
                 exit;

@@ -1,5 +1,14 @@
-/vendor
+/vendor/
 *.sqlite
-.DS_Store
 .env
-/public
+/includes/public/storage/
+/storage/
+/logs/
+/cache/
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+.idea/
+.vscode/
+*.bak

@@ -20,13 +20,34 @@ class Hybrids_controller
      * @param string $types
      * @return bool|string
      */
-    public function generate_hybrid_image(int $heads, string $types)
+    public function generate_hybrid_image(int $heads, string $types, string $monstre_1, string $monstre_2)
     {
+        /**
+         * Récupération des données des deux monstres parents
+         * @var mixed
+         */
+        $stmt = $this->pdo->prepare("SELECT * FROM monstres WHERE uuid = ? OR uuid = ? limit 2");
+        $stmt->execute([$monstre_1, $monstre_2]);
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (count($result) != 2) {
+            http_response_code(404);
+            echo json_encode(["message" => "404 - Un des monstres n'existe pas"]);
+            exit;
+        }
+        $monsterData1 = $result[0];
+        $monsterData2 = $result[1];
+
+
         $pollinations = new Pollinations_class('', $heads, $types);
-        $prompt = urlencode($pollinations->getImagePrompt($pollinations->getHeads(), $pollinations->getTypes()));
+        $prompt = urlencode($pollinations->getImage_hybridPrompt($pollinations->getHeads(), $pollinations->getTypes(), $monsterData1, $monsterData2));
 
         $pollinations_api_url = "https://image.pollinations.ai/prompt/{$prompt}?width=1042&height=1042&model=gptimage?token=EwVAHta0RAXgtuA2";
 
+
+        /**
+         * Stockage de l'image dans les fichier serveur
+         * @var mixed
+         */
         $response = @file_get_contents($pollinations_api_url);
         if ($response === FALSE) {
             http_response_code(500);
@@ -98,13 +119,13 @@ class Hybrids_controller
         }
         $monsterData1 = $result[0];
         $monsterData2 = $result[1];
-        $hybridName = $monsterData1['name'] . '_' . $monsterData2['name'];
+        $hybridName = "Hybride de " . $monsterData1['name'] . " et " . $monsterData2['name'];
         $hybridtypes = $monsterData1['type'] . ',' . $monsterData2['type'];
         $hybriddef_score = ($monsterData1['defense_score'] + $monsterData2['defense_score']) / 2;
         $hybridatt_score = ($monsterData1['attaque_score'] + $monsterData2['attaque_score']) / 2;
         $hybridhealth_score = ($monsterData1['health_score'] + $monsterData2['health_score']) / 2;
         $hybridheads = $monsterData1['heads'] + $monsterData2['heads'];
-        $hybridimage = $this->generate_hybrid_image($hybridheads, $hybridtypes);
+        $hybridimage = $this->generate_hybrid_image($hybridheads, $hybridtypes, $monstre_1, $monstre_2);
         $hybriddescription = $this->generate_monster_hybrid_info($hybridName, $hybridheads, $hybridtypes);
         $hybrid = new Hybrid_class($hybridName, $hybriddescription, array_merge(explode(',', $monsterData1['type']), explode(',', $monsterData2['type'])) , $hybridimage, $hybridhealth_score, $hybriddef_score, $hybridatt_score, $hybridheads, $created_by , $monstre_1, $monstre_2);
         $hybrid->setName($hybridName)->setDescription($hybriddescription)->setType(array_merge(explode(',', $monsterData1['type']), explode(',', $monsterData2['type'])))->setHeads($hybridheads)->setIsHybride(true);
