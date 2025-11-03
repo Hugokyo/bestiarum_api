@@ -84,7 +84,7 @@ class Monsters_controller
      */
     public function create(string $name, string $description, array $type, string $image, int $heal_score, int $defense_score, int $attaque_score, int $heads, string $created_by, bool $is_hybride){
         $monstre = new Monstre_class($name, $description, $type, $image, $heal_score, $defense_score, $attaque_score, $heads, false , $created_by);
-        $monstre->setName($name)->setDescription($description)->setType($type)->setHeads($heads)->setIsHybride(false);
+        $monstre->setName($name)->setDescription($description)->setType($type)->setHeads($heads)->setIsHybride(false)->setCreated_by($created_by);
         if (!$this->pdo) {
             throw new Exception("Database connection failed.");
         }

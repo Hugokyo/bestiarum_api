@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/db/db.connector.php';
 require_once __DIR__ . '/includes/controllers/auth.controller.php';
+require_once __DIR__ . '/includes/controllers/users.controller.php';
 require_once __DIR__ . '/includes/controllers/types.controller.php';
 require_once __DIR__ . '/includes/controllers/monsters.controller.php';
 require_once __DIR__ . '/includes/controllers/hybrids.controller.php';
@@ -108,10 +109,13 @@ if(!empty($path)){
             $responseText = json_decode($responseTextJson, true);
 
             $monstre = new Monsters_controller();
-            $user = new User();
             $typeController = new Types_controller();
             $typedata = $typeController->createType($data['types']);
-            echo $monstre->create($data['name'], $responseText[0]['description'], $typedata, $responseImage, $responseText[0]['health_score'], $responseText[0]['defense_score'], $responseText[0]['attaque_score'], $data['heads'], $user->getId(), false
+            $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+            $token = str_replace('Bearer ', '', $authHeader);
+            $authController = new Auth_controller();
+            $userId = $authController->getIdWithToken($token);
+            echo $monstre->create($data['name'], $responseText[0]['description'], $typedata, $responseImage, $responseText[0]['health_score'], $responseText[0]['defense_score'], $responseText[0]['attaque_score'], $data['heads'], $userId, false
             );
             break;
         case 'hybrids/create':
@@ -165,6 +169,57 @@ if(!empty($path)){
             $match = new Matchs_controller();
             echo $match->match($data['monstre_1'], $data['monstre_2']);
             break;
+        case 'users':
+            header("Access-Control-Allow-Origin: *");
+            header("Content-Type: application/json; charset=UTF-8");
+            header("Access-Control-Allow-Methods: POST");
+            header("Access-Control-Allow-Headers: Access-Control-Allow-Headers, Content-Type, Access-Control-Allow-Methods, Authorization, X-Requested-With");
+            $body = file_get_contents('php://input');
+            $data = json_decode($body, true);
+             if (!isset($data['uuid'])) {
+                http_response_code(401);
+                echo json_encode(["message" => "401 - Données incomplètes pour cet requette"]);
+                exit;
+            }
+            if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+                http_response_code(405);
+                echo json_encode(["message" => "405 - Méthode non autorisée"]);
+                exit;
+            }
+            if (!isset($_SERVER['HTTP_AUTHORIZATION']) || strpos($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') !== 0) {
+                http_response_code(401);
+                echo json_encode(["message" => "401 - Authentification Bearer requise"]);
+                exit;
+            }
+            $user = new Users_controller();
+            echo json_encode($user->getUser($data['uuid']));
+            break;
+        case 'users/monstres': 
+            header("Access-Control-Allow-Origin: *");
+            header("Content-Type: application/json; charset=UTF-8");
+            header("Access-Control-Allow-Methods: POST");
+            header("Access-Control-Allow-Headers: Access-Control-Allow-Headers, Content-Type, Access-Control-Allow-Methods, Authorization, X-Requested-With");
+            $body = file_get_contents('php://input');
+            $data = json_decode($body, true);
+             if (!isset($data['uuid'])) {
+                http_response_code(401);
+                echo json_encode(["message" => "401 - Données incomplètes pour cet requette"]);
+                exit;
+            }
+            if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+                http_response_code(405);
+                echo json_encode(["message" => "405 - Méthode non autorisée"]);
+                exit;
+            }
+            if (!isset($_SERVER['HTTP_AUTHORIZATION']) || strpos($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') !== 0) {
+                http_response_code(401);
+                echo json_encode(["message" => "401 - Authentification Bearer requise"]);
+                exit;
+            }
+            $user = new Users_controller();
+            echo json_encode($user->getMonsterByUser($data['uuid']));
+            break;
+
         default:
             http_response_code(400); 
             

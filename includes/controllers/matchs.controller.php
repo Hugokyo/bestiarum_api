@@ -28,14 +28,14 @@ class Matchs_controller
         }
         $monsterData1 = json_encode($result[0]);
         $monsterData2 = json_encode($result[1]);
-        $prompt = "Tu es un moteur de simulation de combat entre deux créatures mystiques. Je te donne deux tableaux avec leurs statistiques d’attaque, de défense et de soins. Analyse leurs forces et faiblesses pour déterminer le gagnant de manière réaliste (pas aléatoire pur). Génère des logs immersifs (4 à 5 lignes) décrivant le combat étape par étape, avec un ton mythologique. Ne renvoie aucun texte explicatif, aucune introduction, aucun markdown, aucune justification, aucune phrase hors JSON. Je veux uniquement un tableau JSON au format suivant : ['winner':'nom_du_gagnant','logs':['log1','log2','log3','log4']] Voici les données : monstre_1 : {$monsterData1} monstre_2 : {$monsterData2}";
+        $prompt = "Tu es un moteur de simulation de combat entre deux créatures mystiques. Je te donne deux tableaux avec leurs statistiques d’attaque, de défense et de soins. Analyse leurs forces et faiblesses pour déterminer le gagnant de manière réaliste (pas aléatoire pur). Génère des logs immersifs (4 à 5 lignes) décrivant le combat étape par étape, avec un ton mythologique. Ne renvoie aucun texte explicatif, aucune introduction, aucun markdown, aucune justification, aucune phrase hors JSON. Je veux uniquement un tableau JSON au format suivant : ['winner':'uuid_du_gagant','logs':['log1','log2','log3','log4']] Voici les données : monstre_1 : {$monsterData1} monstre_2 : {$monsterData2}";
         $pollinations_api_url = "https://text.pollinations.ai/{$prompt}";
 
         $response = @file_get_contents($pollinations_api_url);
         $data = json_decode($response, true);
         $match = new Match_class(json_encode($data['winner']), $monstre1, $monstre2);
         $stmt = $this->pdo->prepare("INSERT INTO combat (uuid, result, creature_1, creature_2) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$match->getUuid(), $match->getResult(), $match->getMonstre1(), $match->getMonstre2()]);
+        $stmt->execute([$match->getUuid(), json_decode($match->getResult()), $match->getMonstre1(), $match->getMonstre2()]);
         http_response_code(201); 
         return json_encode([
             "message" => "Combat réaliser avec succès",

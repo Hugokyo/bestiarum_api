@@ -55,7 +55,9 @@ Voici les principales routes disponibles dans l`API:
 - `POST /auth/logout` - Déconnexion utilisateur
 
 ## Afficher User
-- `GET /users/{id}` Afficher les stats de l`utilisateur ainsi que tout c`est créature et match
+- `GET /users/{uuid}` Afficher les stats de l`utilisateur
+- `GET /users/monstres/{uuid}` Afficher tout les monstres de l`utilisateur
+
 
 ### création de monstre
 - `POST /monstres/create` - Connexion utilisateur

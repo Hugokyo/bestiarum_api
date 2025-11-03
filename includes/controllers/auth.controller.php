@@ -86,11 +86,11 @@ class Auth_controller
      */
     public function logout()
     {
-        if(!$_SERVER['HTTP_COOKIE']){
+        if(isset($_COOKIE['token'])){
+            setcookie('token', '', time() - 3600, '/');
+        } else {
             http_response_code(401);
             echo json_encode(["message" => "401 - Veillez vous connecter"]);
-        } else if($_SERVER['HTTP_COOKIE']){
-            setcookie('token', '', time() - 3600, '/');
         }
     }
     /**
@@ -117,6 +117,19 @@ class Auth_controller
             return $json;
         }
         return true;
+    }
+
+    public function getIdWithToken(string $token)
+    {
+        $key = '1a3LM3W966D6QTJ5BJb9opunkUcw_d09NCOIJb9QZTsrneqOICoMoeYUDcd_NfaQyR787PAH98Vhue5g938jdkiyIZyJICytKlbjNBtebaHljIR6-zf3A2h3uy6pCtUFl1UhXWnV6madujY4_3SyUViRwBUOP-UudUL4wnJnKYUGDKsiZePPzBGrF4_gxJMRwF9lIWyUCHSh-PRGfvT7s1mu4-5ByYlFvGDQraP4ZiG5bC1TAKO_CnPyd1hrpdzBzNW4SfjqGKmz7IvLAHmRD-2AMQHpTU-hN2vwoA-iQxwQhfnqjM0nnwtZ0urE6HjKl6GWQW-KLnhtfw5n_84IRQ';
+        try {
+            $decoded = JWT::decode($token, new \Firebase\JWT\Key($key, 'HS256'));
+            return $decoded->data->uuid;
+        } catch (Exception $e) {
+            http_response_code(401);
+            echo json_encode(["message" => "401 - Token invalide"]);
+            exit;
+        }
     }
 
 }
