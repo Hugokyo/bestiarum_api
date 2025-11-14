@@ -13,6 +13,8 @@ class Matchs_controller
     }
     /**
      * creation de la function match qui prends en params les uuid des deux monstre au quelle on veux les faire combatres
+     * return : 200 - Combat réalisé avec succès
+     * utilisation : match($monstre1, $monstre2)
      * @param string $monstre1
      * @param string $monstre2
      * @return bool|string

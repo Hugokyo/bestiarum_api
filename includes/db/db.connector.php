@@ -9,6 +9,11 @@ class Db_connector
     $this->pdo = $this->createPDO();
    }
 
+   /**
+    * Function de la connexion à la base de données
+    * remarque : utilise sqlite pour la simplicité
+    * @return PDO
+    */
    private function createPDO()
    {
     try{
@@ -19,7 +24,10 @@ class Db_connector
         die ("Erreur de connexion :" . $e->getMessage());
     }
    }
-
+   /**
+    * Getter pour le pdo
+    * @return PDO
+    */
    public function getPDO()
    {
     return $this->pdo;

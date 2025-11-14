@@ -13,6 +13,8 @@ class Monsters_controller
     }
     /**
      * function qui permet de générer la photo de la créatures, et qui la stocke dans un fichier sur le serveurs
+     * return : 200 - Image générée avec succès
+     * utilisation : generate_image($heads, $types)
      * @param int $heads
      * @param string $types
      * @return bool|string
@@ -20,10 +22,8 @@ class Monsters_controller
     public function generate_image(int $heads, string $types)
     {
         $pollinations = new Pollinations_class('', $heads, $types);
-        $prompt = urlencode($pollinations->getImagePrompt($pollinations->getHeads(), $pollinations->getTypes()));
-
-        $pollinations_api_url = "https://image.pollinations.ai/prompt/{$prompt}?width=1042&height=1042&model=gptimage?token=EwVAHta0RAXgtuA2";
-
+        $prompt = rawurlencode($pollinations->getImagePrompt($pollinations->getHeads(), $pollinations->getTypes()));
+        echo $pollinations_api_url = "https://image.pollinations.ai/prompt/{$prompt}?model=turbo&width=1042&height=1042&token=qVslhfCiZhJy9cZq";
         $response = @file_get_contents($pollinations_api_url);
         if ($response === FALSE) {
             http_response_code(500);
@@ -43,7 +43,9 @@ class Monsters_controller
         return $response;
     }
     /**
-    * function qui permet de générer la description modifier pour la créature
+     * function qui permet de générer la description modifier pour la créature
+     * return : 200 - Description générée avec succès
+     * utilisation : generate_monster_info($name, $heads, $types) 
      * @param string $name
      * @param int $heads
      * @param string $types
@@ -68,7 +70,9 @@ class Monsters_controller
 
     }
     /**
-     * function qui permet de crée une créatures
+     * function qui permet de crée une créatures dans la base de données
+     * return : 201 - Monstre créé avec succès
+     * utilisation : create($name, $description, $type, $image, $heal_score, $defense_score, $attaque_score, $heads, $created_by, $is_hybride)
      * @param string $name
      * @param string $description
      * @param array $type

@@ -11,7 +11,12 @@ class Users_controller
         $dbConnector = new Db_connector();
         $this->pdo = $dbConnector->getPDO();
     }
-
+    /**
+     * Funtion pour récupérer un utilisateur par son id
+     * return : array de toutes les informations sauf le mot de passe
+     * utilisation : getUser($id)
+     * @param string $id
+     */
     public function getUser(string $id){
         $stmt = $this->pdo->prepare("SELECT email, username, created_at FROM users WHERE uuid = ? LIMIT 1");
         $stmt->execute([$id]);
@@ -24,7 +29,12 @@ class Users_controller
             return null;
         }
     }
-
+    /**
+     * Funtion pour récupérer les créatures d'un utilisateur par son id
+     * return : array des créatures de l'utilisateur
+     * utilisation : getMonsterByUser($id)
+     * @param string $id
+     */
     public function getMonsterByUser(string $id){
         $stmt = $this->pdo->prepare("SELECT * FROM monstres WHERE created_by = ?");
         $stmt->execute([$id]);

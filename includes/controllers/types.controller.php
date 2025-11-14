@@ -13,7 +13,8 @@ class Types_controller
     }
     /**
      * fonction qui permet de créer un type pour la créature, il regarde si le type existe, s'il existe on récupère son uuid sinon on le crée
-
+     * return : 201 - Type créé avec succès
+     * utilisation : createType($name)
      * @param string $name
      * @throws \Exception
      */

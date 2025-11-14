@@ -16,8 +16,12 @@ class Hybrids_controller
     }
     /**
      * function permettant de crée la photo pour la créatures hybrid et la stocker dans notre serveur
+     * return : 200 - Image générée avec succès
+     * utilisation : generate_hybrid_image($heads, $types, $monstre_1, $monstre_2)
      * @param int $heads
      * @param string $types
+     * @param string $monstre_1
+     * @param string $monstre_2
      * @return bool|string
      */
     public function generate_hybrid_image(int $heads, string $types, string $monstre_1, string $monstre_2)
@@ -41,7 +45,7 @@ class Hybrids_controller
         $pollinations = new Pollinations_class('', $heads, $types);
         $prompt = urlencode($pollinations->getImage_hybridPrompt($pollinations->getHeads(), $pollinations->getTypes(), $monsterData1, $monsterData2));
 
-        $pollinations_api_url = "https://image.pollinations.ai/prompt/{$prompt}?width=1042&height=1042&model=gptimage?token=EwVAHta0RAXgtuA2";
+        $pollinations_api_url = "https://image.pollinations.ai/prompt/{$prompt}?width=1042&height=1042";
 
 
         /**
@@ -68,25 +72,33 @@ class Hybrids_controller
     }
     /**
      * function qui permet de générer la description modifier pour la créature hybrids
+     * return : 200 - Description générée avec succès
+     * utilisation : generate_monster_hybrid_info($parent1, $parent2, $heads, $types)
      * @param string $name
      * @param int $heads
      * @param string $types
+     * @param string $parent1
+     * @param string $parent2
      * @return bool|string
      */
-    public function generate_monster_hybrid_info(string $name, int $heads, string $types)
+    public function generate_monster_hybrid_info(string $parent1, string $parent2, int $heads, string $types)
     {
-        $type_names_final = [];
-        foreach(explode('-', $types) as $type_name){
-            $smt = $this->pdo->prepare("SELECT * FROM type WHERE uuid = ? limit 1");
-            $smt->execute([trim($type_name)]);
-            $smt_result = $smt->fetch(PDO::FETCH_ASSOC);
-            if($smt_result){
-                $type_names_final[] = $smt_result['name'];
-            }
+        /**
+         * Récupération des données des deux monstres parents
+         * @var mixed
+         */
+        $stmt = $this->pdo->prepare("SELECT * FROM monstres WHERE uuid = ? OR uuid = ? limit 2");
+        $stmt->execute([$parent1, $parent2]);
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (count($result) != 2) {
+            http_response_code(404);
+            echo json_encode(["message" => "404 - Un des monstres n'existe pas"]);
+            exit;
         }
-
-        $pollinations = new Pollinations_class($name, $heads, implode('-', $type_names_final));
-        $prompt = urlencode($pollinations->getTextePrompt_hybrid($pollinations->getName(), $pollinations->getHeads(), $pollinations->getTypes()));
+        $monsterData1 = $result[0];
+        $monsterData2 = $result[1];
+        $pollinations = new Pollinations_class();
+        $prompt = urlencode($pollinations->getTextePrompt_hybrid($heads, $types, $monsterData1, $monsterData2));
 
         $pollinations_api_url = "https://text.pollinations.ai/{$prompt}";
 
@@ -100,8 +112,11 @@ class Hybrids_controller
 
         return $response; 
     }
+
     /**
      * fonction qui permet de créer l'hybride de deux créatures existantes, il prend en paramètre l'id des deux parents et récupère toutes les informations sur ces parents, et crée un monstre avec le mélange des informations de ces deux parents
+     * return : 201 - Monstre hybride créé avec succès
+     * utilisation : create($created_by, $monstre_1, $monstre_
      * @param string $created_by
      * @param string $monstre_1
      * @param string $monstre_2
@@ -119,22 +134,31 @@ class Hybrids_controller
         }
         $monsterData1 = $result[0];
         $monsterData2 = $result[1];
-        $hybridName = "Hybride de " . $monsterData1['name'] . " et " . $monsterData2['name'];
-        $hybridtypes = $monsterData1['type'] . ',' . $monsterData2['type'];
-        $hybriddef_score = ($monsterData1['defense_score'] + $monsterData2['defense_score']) / 2;
-        $hybridatt_score = ($monsterData1['attaque_score'] + $monsterData2['attaque_score']) / 2;
-        $hybridhealth_score = ($monsterData1['health_score'] + $monsterData2['health_score']) / 2;
         $hybridheads = $monsterData1['heads'] + $monsterData2['heads'];
-        $hybridimage = $this->generate_hybrid_image($hybridheads, $hybridtypes, $monstre_1, $monstre_2);
-        $hybriddescription = $this->generate_monster_hybrid_info($hybridName, $hybridheads, $hybridtypes);
-        $hybrid = new Hybrid_class($hybridName, $hybriddescription, array_merge(explode(',', $monsterData1['type']), explode(',', $monsterData2['type'])) , $hybridimage, $hybridhealth_score, $hybriddef_score, $hybridatt_score, $hybridheads, $created_by , $monstre_1, $monstre_2);
-        $hybrid->setName($hybridName)->setDescription($hybriddescription)->setType(array_merge(explode(',', $monsterData1['type']), explode(',', $monsterData2['type'])))->setHeads($hybridheads)->setIsHybride(true);
-        if (!$this->pdo) {
-            throw new Exception("Connexion à la base de données échouée.");
+        $pollinations = new Pollinations_class('', ($monsterData1['heads'] + $monsterData2['heads']) / 2, implode('-', [implode(',', is_array($monsterData1['type']) ? $monsterData1['type'] : explode(',', $monsterData1['type'])), implode(',', is_array($monsterData2['type']) ? $monsterData2['type'] : explode(',', $monsterData2['type']))]));
+        $prompt = urlencode($pollinations->getTextePrompt_hybrid($pollinations->getHeads(), $pollinations->getTypes(), $monsterData1, $monsterData2));
+        $pollinations_api_url = "https://text.pollinations.ai/{$prompt}";
+        $response = @file_get_contents($pollinations_api_url);
+        if ($response === FALSE) {
+            http_response_code(500);
+            echo json_encode(["message" => "500 - Erreur lors de la génération de la description"]);
+            exit;
         }
+        $hybridData = json_decode($response, true)[0];
+        $image_url = $this->generate_hybrid_image($hybridData['heads'], $hybridData['types'], $monstre_1, $monstre_2);
+        $hybride = new Hybrid_class($hybridData['name'], $hybridData['description'], array_merge(explode(',', $monsterData1['type']), explode(',', $monsterData2['type'])), $image_url, $hybridData['health_score'], $hybridData['defense_score'], $hybridData['attaque_score'], $hybridData['heads'], $created_by, $monstre_1, $monstre_2);
+        $hybride->setName($hybridData['name'])->setDescription($hybridData['description'])->setType(array_merge(explode(',', $monsterData1['type']), explode(',', $monsterData2['type'])))->setHeads($hybridData['heads'])->setIsHybride(true)->setCreated_by($created_by);
+        if (!$this->pdo) {
+            throw new Exception("Database connection failed.");
+        }
+        /**
+         * Stockage de l'hybride dans la base de données
+         * @var mixed
+         */
         $stmt = $this->pdo->prepare("INSERT INTO monstres (uuid, name, description, type, image, health_score, defense_score, attaque_score, heads, created_by, is_hybride) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$hybrid->getId(), $hybrid->getName(), $hybrid->getDescription(), implode(',', $hybrid->getType()), $hybrid->getImage(), $hybrid->getHeal_score(), $hybrid->getDefense_score(), $hybrid->getAttaque_score(), $hybrid->getHeads(), $hybrid->getCreated_by(), true]);
+        $typeString = is_array($hybride->getType()) ? implode(',', $hybride->getType()) : $hybride->getType();
+        $stmt->execute([$hybride->getId(), $hybride->getName(), $hybride->getDescription(), $typeString, $hybride->getImage(), $hybride->getHeal_score(), $hybride->getDefense_score(), $hybride->getAttaque_score(), $hybridheads, $hybride->getCreated_by(), true]);
         http_response_code(201);
-        return json_encode(["message" => "Hybride créé avec succès"]);
+        return json_encode(["message" => "Monstre hybride créé avec succès"]);
     }
 }

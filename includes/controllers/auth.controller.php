@@ -15,7 +15,9 @@ class Auth_controller
         $this->pdo = $dbConnector->getPDO();
     }
     /**
-     * Function for register endpoint
+     * Function pour l'endpoint register
+     * Return : 201 - Utilisateur créé avec succès
+     * Utilisations : register($username, $email, $password)
      * @param string $username
      * @param string $email
      * @param string $password
@@ -38,8 +40,11 @@ class Auth_controller
     }
 
     /**
-     * function for login endpoint
-     * @param string $id
+     * Function pour l'endpoint login
+     * Return : 200 - Connexion réussie
+     * Utilisations : login($email, $password)
+     * @param string $email
+     * @param string $password
      * @return void
      */
     public function login(string $email, string $password)
@@ -71,6 +76,7 @@ class Auth_controller
                         'HS256'
                     );
             header("Set-Cookie: token={$token}; Secure; Path=/; SameSite=None; Partitioned;");
+            http_response_code(200);
             echo json_encode([
                 "message" => "200 - Connexion réussie",
                 "token" => $token,
@@ -82,12 +88,18 @@ class Auth_controller
     }
     /**
      * la function pour permettre a l'utilisateur de se deconnecter, il supprime le cookie qui est stocker dans le header
+     * Return : 200 - Utilisateur déconnecter
+     * utilisation : logout()
      * @return void
      */
     public function logout()
     {
         if(isset($_COOKIE['token'])){
             setcookie('token', '', time() - 3600, '/');
+            http_response_code(200);
+            echo json_encode([
+                "message" => "200 - Utilisateur déconnecter",
+            ]);
         } else {
             http_response_code(401);
             echo json_encode(["message" => "401 - Veillez vous connecter"]);
@@ -99,26 +111,36 @@ class Auth_controller
      * @param mixed $data
      * @return bool|string
      */
-    public function header(string $method, ?array $data = null)
+    public function header(string $method, bool $authorisation = false, string ...$requiredFields)
     {
-        if ($data !== null && !isset($data['name'], $data['heads'], $data['types'])) {
-            http_response_code(401);
-            $json = json_encode(["message" => "401 - Données incomplètes pour cette requête"]);
-            return $json;
-        }
         if ($_SERVER['REQUEST_METHOD'] !==  $method) {
             http_response_code(405);
             $json = json_encode(["message" => "405 - Méthode non autorisée"]);
             return $json;
         }
-        if (!isset($_SERVER['HTTP_AUTHORIZATION']) || strpos($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') !== 0) {
-            http_response_code(401);
-            $json = json_encode(["message" => "401 - Authentification Bearer requise"]);
-            return $json;
+        if ($authorisation) {
+            if (!isset($_SERVER['HTTP_AUTHORIZATION']) ||strpos($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') !== 0) {
+                http_response_code(401);
+                return json_encode(["message" => "401 - Authentification Bearer requise"]);
+            }
+        }
+        $raw = file_get_contents('php://input');
+        $input = json_decode($raw, true) ?? [];
+        foreach ($requiredFields as $field) {
+            if (!isset($input[$field]) || $input[$field] === '') {
+                http_response_code(401);
+                return json_encode([
+                    "message" => "401 - Données incomplètes pour cette requête",
+                    "missing" => $field
+                ]);
+            }
         }
         return true;
     }
-
+    /**
+     * Permet de récupérer l'id de l'utilisateur avec le token
+     * @param string $token
+     */
     public function getIdWithToken(string $token)
     {
         $key = '1a3LM3W966D6QTJ5BJb9opunkUcw_d09NCOIJb9QZTsrneqOICoMoeYUDcd_NfaQyR787PAH98Vhue5g938jdkiyIZyJICytKlbjNBtebaHljIR6-zf3A2h3uy6pCtUFl1UhXWnV6madujY4_3SyUViRwBUOP-UudUL4wnJnKYUGDKsiZePPzBGrF4_gxJMRwF9lIWyUCHSh-PRGfvT7s1mu4-5ByYlFvGDQraP4ZiG5bC1TAKO_CnPyd1hrpdzBzNW4SfjqGKmz7IvLAHmRD-2AMQHpTU-hN2vwoA-iQxwQhfnqjM0nnwtZ0urE6HjKl6GWQW-KLnhtfw5n_84IRQ';
