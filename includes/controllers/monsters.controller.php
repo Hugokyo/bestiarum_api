@@ -23,7 +23,7 @@ class Monsters_controller
     {
         $pollinations = new Pollinations_class('', $heads, $types);
         $prompt = rawurlencode($pollinations->getImagePrompt($pollinations->getHeads(), $pollinations->getTypes()));
-        echo $pollinations_api_url = "https://image.pollinations.ai/prompt/{$prompt}?model=turbo&width=1042&height=1042&token=qVslhfCiZhJy9cZq";
+        $pollinations_api_url = "https://image.pollinations.ai/prompt/{$prompt}?model=flux&width=1042&height=1042&token=qVslhfCiZhJy9cZq";
         $response = @file_get_contents($pollinations_api_url);
         if ($response === FALSE) {
             http_response_code(500);
